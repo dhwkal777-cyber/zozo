@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부동산 관리 - 로그인</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #e67c1e;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .login-container {
+            background: #fff;
+            border-radius: 32px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            width: 360px;
+            padding: 48px 36px 32px 36px;
+            text-align: center;
+        }
+
+        .login-header {
+            margin-bottom: 32px;
+        }
+
+        .login-logo {
+            margin-bottom: 24px;
+        }
+
+        .login-logo i {
+            font-size: 3.2rem;
+            color: #f59e0b;
+        }
+
+        .login-logo h1 {
+            color: #333;
+            font-size: 2.1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .login-form-container {
+            text-align: left;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 18px;
+        }
+
+        .login-form label {
+            display: block;
+            text-align: left;
+            margin-bottom: 7px;
+            color: #444;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 100%;
+            padding: 13px 16px;
+            border: 1.5px solid #eee;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            background: #fcfcfc;
+            margin-bottom: 2px;
+            box-sizing: border-box;
+        }
+
+        .login-form input[type="text"]:focus,
+        .login-form input[type="password"]:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-size: 0.97rem;
+            color: #666;
+        }
+
+        .remember-me input[type="checkbox"] {
+            margin: 0;
+            width: 16px;
+            height: 16px;
+        }
+
+        .forgot-password {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-password:hover {
+            color: #5a6fd8;
+        }
+
+        .login-btn {
+            width: 100%;
+            background: #e67c1e;
+            color: #fff;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .login-footer {
+            margin-top: 12px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .divider {
+            position: relative;
+            text-align: center;
+            margin: 24px 0;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e5e7eb;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 16px;
+        }
+
+        .demo-btn, .change-password-btn {
+            background: none;
+            color: #e67c1e;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-left: auto;
+            margin-right: 0;
+            padding: 0;
+        }
+
+        .demo-btn:hover, .change-password-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .system-info {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .feature-item i {
+            color: #667eea;
+            width: 20px;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 16px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 16px;
+            right: 24px;
+            transition: color 0.2s ease;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .change-password-form .form-group {
+            margin-bottom: 20px;
+        }
+
+        .change-password-form label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .change-password-form input[type="password"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .change-password-form input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .change-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .change-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* 알림 메시지 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification:not(.hidden) {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: #10b981;
+        }
+
+        .notification.error {
+            background-color: #ef4444;
+        }
+
+        .notification.warning {
+            background-color: #f59e0b;
+        }
+
+        .notification.info {
+            background-color: #3b82f6;
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-content i {
+            font-size: 1.2rem;
+        }
+
+        /* 반응형 */
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 10px;
+                padding: 24px;
+            }
+            
+            .login-logo {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .login-logo h1 {
+                font-size: 1.5rem;
+            }
+            
+            .form-options {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-logo">
+            <i class="fas fa-building"></i>
+            <h1>부동산 관리</h1>
+        </div>
+        <form class="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="username">아이디</label>
+                <input type="text" id="username" name="username" required placeholder="아이디를 입력하세요">
+            </div>
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" name="password" required placeholder="비밀번호를 입력하세요">
+            </div>
+            <div class="form-options">
+                <label class="remember-me">
+                    <input type="checkbox" id="remember">
+                    아이디 저장
+                </label>
+            </div>
+            <button type="submit" class="login-btn">➔ 로그인</button>
+        </form>
+        <div class="login-footer">
+            <button class="change-password-btn" onclick="showChangePassword()">비밀번호 변경</button>
+        </div>
+    </div>
+
+    <!-- 비밀번호 변경 모달 -->
+    <div id="changePasswordModal" class="modal">
+        <div class="modal-content change-password-modal">
+            <span class="close-btn" onclick="closeChangePasswordModal()">&times;</span>
+            <div class="modal-header">
+                <h2 class="modal-title">비밀번호 변경</h2>
+            </div>
+            <form class="change-password-form" onsubmit="handlePasswordChange(event)">
+                <div class="form-group">
+                    <label for="current-password">
+                        <i class="fas fa-lock"></i>
+                        현재 비밀번호
+                    </label>
+                    <input type="password" id="current-password" name="current-password" required 
+                           placeholder="현재 비밀번호를 입력하세요">
+                </div>
+
+                <div class="form-group">
+                    <label for="new-password">
+                        <i class="fas fa-key"></i>
+                        새 비밀번호
+                    </label>
+                    <input type="password" id="new-password" name="new-password" required 
+                           placeholder="새 비밀번호를 입력하세요" minlength="6">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">
+                        <i class="fas fa-check"></i>
+                        비밀번호 확인
+                    </label>
+                    <input type="password" id="confirm-password" name="confirm-password" required 
+                           placeholder="새 비밀번호를 다시 입력하세요" minlength="6">
+                </div>
+
+                <button type="submit" class="change-btn">
+                    <i class="fas fa-save"></i>
+                    비밀번호 변경
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 알림 메시지 -->
+    <div id="notification" class="notification hidden">
+        <div class="notification-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="notification-message"></span>
+        </div>
+    </div>
+
+    <script>
+        // 로그인 처리 함수
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // 로그인 검증
+            if (username && password) {
+                const storedPassword = localStorage.getItem('adminPassword') || 'admin123';
+                
+                if (username === 'admin' && password === storedPassword) {
+                    // 로그인 상태 저장
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('loginTime', new Date().getTime());
+                    
+                    showNotification('로그인 성공! 메인 페이지로 이동합니다.', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'main.html';
+                    }, 1500);
+                } else {
+                    showNotification('아이디 또는 비밀번호가 올바르지 않습니다.', 'error');
+                }
+            } else {
+                showNotification('아이디와 비밀번호를 모두 입력해주세요.', 'warning');
+            }
+        }
+
+
+
+        // 비밀번호 변경 모달 표시
+        function showChangePassword() {
+            document.getElementById('changePasswordModal').style.display = 'block';
+        }
+
+        // 비밀번호 변경 모달 닫기
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+            document.querySelector('.change-password-form').reset();
+        }
+
+        // 비밀번호 변경 처리
+        function handlePasswordChange(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            // 현재 저장된 비밀번호 가져오기 (기본값: admin123)
+            const storedPassword = localStorage.getItem('adminPassword') || 'admin123';
+            
+            // 현재 비밀번호 확인
+            if (currentPassword !== storedPassword) {
+                showNotification('현재 비밀번호가 올바르지 않습니다.', 'error');
+                return;
+            }
+            
+            // 새 비밀번호 확인
+            if (newPassword !== confirmPassword) {
+                showNotification('새 비밀번호와 확인 비밀번호가 일치하지 않습니다.', 'error');
+                return;
+            }
+            
+            // 비밀번호 길이 확인
+            if (newPassword.length < 6) {
+                showNotification('비밀번호는 최소 6자 이상이어야 합니다.', 'warning');
+                return;
+            }
+            
+            // 새 비밀번호 저장
+            localStorage.setItem('adminPassword', newPassword);
+            
+            showNotification('비밀번호가 성공적으로 변경되었습니다.', 'success');
+            closeChangePasswordModal();
+        }
+
+        // 알림 메시지 표시
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notification-message');
+            
+            messageElement.textContent = message;
+            notification.className = `notification ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 페이지 로드시 저장된 아이디 불러오기
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedUsername = localStorage.getItem('savedUsername');
+            if (savedUsername) {
+                document.getElementById('username').value = savedUsername;
+                document.getElementById('remember').checked = true;
+            }
+        });
+
+        // 아이디 저장 기능
+        document.getElementById('remember').addEventListener('change', function() {
+            if (this.checked) {
+                const username = document.getElementById('username').value;
+                if (username) {
+                    localStorage.setItem('savedUsername', username);
+                }
+            } else {
+                localStorage.removeItem('savedUsername');
+            }
+        });
+    </script>
+</body>
+</html>

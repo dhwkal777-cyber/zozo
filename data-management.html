@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터관리 - 부동산 관리 시스템</title>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #92400e 100%);
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* 헤더 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: #374151;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #374151;
+        }
+        .sync-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .sync-btn:hover {
+            background: #059669;
+        }
+        /* 메인 컨텐츠 */
+        .main-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .management-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .management-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .card-icon {
+            font-size: 1.5rem;
+            color: #f59e0b;
+        }
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #374151;
+        }
+        .card-content {
+            margin-bottom: 20px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+        .info-value {
+            font-weight: 600;
+            color: #374151;
+        }
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .btn-primary {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #d97706;
+        }
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        /* 통계 카드 */
+        .statistics-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 10px;
+        }
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #f59e0b;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        /* 파일 입력 */
+        .file-input-container {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+        .file-input-label {
+            display: block;
+            padding: 12px 16px;
+            background: #f3f4f6;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            text-align: center;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .file-input-label:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        .file-input-label i {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+        /* 프로그레스 바 */
+        .progress-container {
+            margin-top: 15px;
+            display: none;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        /* 로그 */
+        .log-container {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+        }
+        .log-entry {
+            padding: 2px 0;
+            color: #d1d5db;
+        }
+        .log-entry.success {
+            color: #10b981;
+        }
+        .log-entry.error {
+            color: #ef4444;
+        }
+        .log-entry.warning {
+            color: #f59e0b;
+        }
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 15px;
+            }
+            .main-content {
+                padding: 15px;
+            }
+            .management-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .card-actions {
+                flex-direction: column;
+            }
+            .action-btn {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-content">
+            <a href="main.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="page-title">데이터관리</h1>
+            <button class="sync-btn" onclick="syncData()">
+                <i class="fas fa-sync-alt"></i> 동기화
+            </button>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content">
+        <div class="management-grid">
+            <!-- 매물목록 내보내기 -->
+            <div class="management-card">
+                <div class="card-header">
+                    <i class="card-icon fas fa-file-export"></i>
+                    <h3 class="card-title">매물목록 내보내기</h3>
+                </div>
+                <div class="card-content">
+                    <div class="info-item">
+                        <span class="info-label">지원 형식</span>
+                        <span class="info-value">CSV, Excel</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="action-btn btn-secondary" onclick="exportPropertyData('csv')">
+                        <i class="fas fa-file-csv"></i> CSV
+                    </button>
+                    <button class="action-btn btn-warning" onclick="exportPropertyData('excel')">
+                        <i class="fas fa-file-excel"></i> 엑셀
+                    </button>
+                </div>
+            </div>
+            <!-- 매물목록 가져오기 -->
+            <div class="management-card">
+                <div class="card-header">
+                    <i class="card-icon fas fa-file-import"></i>
+                    <h3 class="card-title">매물목록 가져오기</h3>
+                </div>
+                <div class="card-content">
+                    <div class="file-input-container">
+                        <input type="file" id="importPropertyFile" class="file-input" accept=".csv,.xlsx" onchange="handleImportPropertyFile(this)">
+                        <label for="importPropertyFile" class="file-input-label" id="importPropertyDropLabel">
+                            <i class="fas fa-cloud-download-alt"></i>
+                            가져올 파일을 선택하거나 드래그하세요 (.csv, .xlsx)
+                        </label>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button id="importPropertyBtn" class="action-btn btn-success" onclick="importPropertyData()" disabled>
+                        <i class="fas fa-file-import"></i> 매물목록 가져오기
+                    </button>
+                </div>
+            </div>
+            <!-- 고객관리 내보내기 -->
+            <div class="management-card">
+                <div class="card-header">
+                    <i class="card-icon fas fa-file-export"></i>
+                    <h3 class="card-title">고객관리 내보내기</h3>
+                </div>
+                <div class="card-content">
+                    <div class="info-item">
+                        <span class="info-label">지원 형식</span>
+                        <span class="info-value">CSV, Excel</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="action-btn btn-secondary" onclick="exportCustomerData('csv')">
+                        <i class="fas fa-file-csv"></i> CSV
+                    </button>
+                    <button class="action-btn btn-warning" onclick="exportCustomerData('excel')">
+                        <i class="fas fa-file-excel"></i> 엑셀
+                    </button>
+                </div>
+            </div>
+            <!-- 고객관리 가져오기 -->
+            <div class="management-card">
+                <div class="card-header">
+                    <i class="card-icon fas fa-file-import"></i>
+                    <h3 class="card-title">고객관리 가져오기</h3>
+                </div>
+                <div class="card-content">
+                    <div class="file-input-container">
+                        <input type="file" id="importCustomerFile" class="file-input" accept=".csv,.xlsx" onchange="handleImportCustomerFile(this)">
+                        <label for="importCustomerFile" class="file-input-label" id="importCustomerDropLabel">
+                            <i class="fas fa-cloud-download-alt"></i>
+                            가져올 파일을 선택하거나 드래그하세요 (.csv, .xlsx)
+                        </label>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button id="importCustomerBtn" class="action-btn btn-success" onclick="importCustomerData()" disabled>
+                        <i class="fas fa-file-import"></i> 고객관리 가져오기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    let selectedPropertyImportFile = null;
+    let selectedCustomerImportFile = null;
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatistics();
+            updateSystemInfo();
+            addLog('데이터 관리 시스템이 시작되었습니다.', 'success');
+        });
+
+        // 통계 업데이트
+        function updateStatistics() {
+            // 매물 데이터
+            const properties = JSON.parse(localStorage.getItem('properties') || '[]');
+            document.getElementById('propertyCount').textContent = properties.length;
+
+            // 고객 데이터
+            const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+            document.getElementById('customerCount').textContent = customers.length;
+
+            // 데이터 크기 계산
+            const allData = JSON.stringify({ properties, customers });
+            const dataSize = Math.round(new Blob([allData]).size / 1024);
+            document.getElementById('dataSize').textContent = dataSize;
+
+            // 마지막 업데이트
+            const lastUpdate = localStorage.getItem('lastDataUpdate');
+            if (lastUpdate) {
+                const date = new Date(lastUpdate);
+                document.getElementById('lastUpdate').textContent = date.toLocaleDateString('ko-KR');
+            }
+
+            // 마지막 백업
+            const lastBackup = localStorage.getItem('lastBackup');
+            if (lastBackup) {
+                const date = new Date(lastBackup);
+                document.getElementById('lastBackup').textContent = date.toLocaleDateString('ko-KR');
+            }
+        }
+
+        // 시스템 정보 업데이트
+        function updateSystemInfo() {
+            // 저장소 사용량 추정
+            let used = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    used += localStorage[key].length;
+                }
+            }
+            
+            const usedKB = Math.round(used / 1024);
+            document.getElementById('storageUsed').textContent = `${usedKB} KB`;
+            
+            // 대략적인 사용 가능 공간 (브라우저마다 다름)
+            const estimatedTotal = 5120; // 약 5MB
+            const available = estimatedTotal - usedKB;
+            document.getElementById('storageAvailable').textContent = `약 ${Math.max(0, available)} KB`;
+        }
+
+        // 로그 추가
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const timestamp = new Date().toLocaleTimeString('ko-KR');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+
+// 매물목록 내보내기
+function exportPropertyData(format) {
+    try {
+        const properties = JSON.parse(localStorage.getItem('properties') || '[]');
+        const propertyFields = [
+            { label: 'ID', key: 'id' },
+            { label: '거래유형', key: 'transactionType' },
+            { label: '매물형태', key: 'type' },
+            { label: '매물명', key: 'name' },
+            { label: '주소', key: 'address' },
+            { label: '가격', key: 'price' },
+            { label: '보증금', key: 'deposit' },
+            { label: '월세', key: 'monthly' },
+            { label: '면적', key: 'area' },
+            { label: '상태', key: 'status' },
+            { label: '상세설명', key: 'description' },
+            { label: '조율여부', key: 'negotiable' },
+            { label: '관리비', key: 'maintenanceFee' },
+            { label: '관리비포함항목', key: 'maintenanceIncluded' },
+            { label: '청소여부', key: 'cleaning' },
+            { label: '공실/퇴실', key: 'vacancy' },
+            { label: '난방', key: 'heating' },
+            { label: '옵션', key: 'options' },
+            { label: '세부형태', key: 'detailType' },
+            { label: '주차', key: 'parking' },
+            { label: '비번', key: 'password' },
+            { label: '사용승인일', key: 'approvalDate' },
+            { label: '연락처', key: 'contact' },
+            { label: '비고', key: 'note' }
+        ];
+        let dataStr, filename, mimeType;
+        if (format === 'csv') {
+            const csvHeaders = propertyFields.map(f => f.label);
+            const csvRows = properties.map(p => propertyFields.map(f => p[f.key]));
+            dataStr = [csvHeaders, ...csvRows]
+                .map(row => row.map(cell => `"${cell || ''}"`).join(','))
+                .join('\n');
+            filename = `매물목록_${new Date().toISOString().split('T')[0]}.csv`;
+            mimeType = 'text/csv;charset=utf-8';
+        } else if (format === 'excel') {
+            const propertySheetData = [
+                Object.fromEntries(propertyFields.map(f => [f.label, f.label]))
+            ].concat(
+                properties.map(p => {
+                    const row = {};
+                    propertyFields.forEach(f => { row[f.label] = p[f.key] ?? ''; });
+                    return row;
+                })
+            );
+            const wb = XLSX.utils.book_new();
+            const propertySheet = XLSX.utils.json_to_sheet(propertySheetData, { skipHeader: true });
+            XLSX.utils.book_append_sheet(wb, propertySheet, '매물목록');
+            const filename = `매물목록_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            addLog(`엑셀 형식으로 매물목록을 내보냈습니다.`, 'success');
+            return;
+        }
+        if (format !== 'excel') {
+            const dataBlob = new Blob([dataStr], { type: mimeType });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            addLog(`${format.toUpperCase()} 형식으로 매물목록을 내보냈습니다.`, 'success');
+        }
+    } catch (error) {
+        addLog(`매물목록 내보내기 실패: ${error.message}`, 'error');
+    }
+}
+
+// 고객관리 내보내기
+function exportCustomerData(format) {
+    try {
+        const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        // 고객관리 주요 필드(엑셀 헤더와 동일)
+        const customerFields = [
+            '최초통화시간', '전화번호', '성별', '고객명(저장명)', '약속시간', '원하는금액', '입주일', '원하는매물', '문자/카톡', '비고'
+        ];
+        let dataStr, filename, mimeType;
+        if (format === 'csv') {
+            const csvHeaders = customerFields;
+            const csvRows = customers.map(c => customerFields.map(f => c[f] || ''));
+            dataStr = [csvHeaders, ...csvRows]
+                .map(row => row.map(cell => `"${cell || ''}"`).join(','))
+                .join('\n');
+            filename = `고객관리_${new Date().toISOString().split('T')[0]}.csv`;
+            mimeType = 'text/csv;charset=utf-8';
+        } else if (format === 'excel') {
+            const customerSheetData = [
+                Object.fromEntries(customerFields.map(f => [f, f]))
+            ].concat(
+                customers.map(c => {
+                    const row = {};
+                    customerFields.forEach(f => { row[f] = c[f] ?? ''; });
+                    return row;
+                })
+            );
+            const wb = XLSX.utils.book_new();
+            const customerSheet = XLSX.utils.json_to_sheet(customerSheetData, { skipHeader: true });
+            XLSX.utils.book_append_sheet(wb, customerSheet, '고객관리');
+            const filename = `고객관리_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            addLog(`엑셀 형식으로 고객관리를 내보냈습니다.`, 'success');
+            return;
+        }
+        if (format !== 'excel') {
+            const dataBlob = new Blob([dataStr], { type: mimeType });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            addLog(`${format.toUpperCase()} 형식으로 고객관리를 내보냈습니다.`, 'success');
+        }
+    } catch (error) {
+        addLog(`고객관리 내보내기 실패: ${error.message}`, 'error');
+    }
+}
+
+// 매물목록 가져오기
+function handleImportPropertyFile(input) {
+    const file = input.files[0];
+    if (file) {
+        selectedPropertyImportFile = file;
+        document.getElementById('importPropertyBtn').disabled = false;
+        addLog(`매물목록 가져오기 파일 선택됨: ${file.name}`, 'info');
+    }
+}
+function importPropertyData() {
+    if (!selectedPropertyImportFile) {
+        alert('가져올 파일을 선택해주세요.');
+        return;
+    }
+    if (!confirm('기존 매물목록에 새 데이터를 추가합니다. 계속하시겠습니까?')) {
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        let importedProperties = [];
+        // 한글/영문 필드명 모두 인식
+        const propertyFieldMap = {
+            'ID': 'id', 'id': 'id',
+            '거래유형': 'transactionType', 'transactionType': 'transactionType',
+            '매물형태': 'type', 'type': 'type',
+            '매물명': 'name', 'name': 'name',
+            '주소': 'address', 'address': 'address',
+            '가격': 'price', 'price': 'price',
+            '보증금': 'deposit', 'deposit': 'deposit',
+            '월세': 'monthly', 'monthly': 'monthly',
+            '면적': 'area', 'area': 'area',
+            '상태': 'status', 'status': 'status',
+            '상세설명': 'description', 'description': 'description',
+            '조율여부': 'negotiable', 'negotiable': 'negotiable',
+            '관리비': 'maintenanceFee', 'maintenanceFee': 'maintenanceFee',
+            '관리비포함항목': 'maintenanceIncluded', 'maintenanceIncluded': 'maintenanceIncluded',
+            '청소여부': 'cleaning', 'cleaning': 'cleaning',
+            '공실/퇴실': 'vacancy', 'vacancy': 'vacancy',
+            '난방': 'heating', 'heating': 'heating',
+            '옵션': 'options', 'options': 'options',
+            '세부형태': 'detailType', 'detailType': 'detailType',
+            '주차': 'parking', 'parking': 'parking',
+            '비번': 'password', 'password': 'password',
+            '사용승인일': 'approvalDate', 'approvalDate': 'approvalDate',
+            '연락처': 'contact', 'contact': 'contact',
+            '비고': 'note', 'note': 'note'
+        };
+        // propertyFields는 중복 없이 value만
+        const propertyFields = Array.from(new Set(Object.values(propertyFieldMap)));
+        try {
+            if (selectedPropertyImportFile.name.endsWith('.csv')) {
+                let lines = e.target.result.split('\n').filter(line => line.trim());
+                // 맨 윗줄이 '매물목록' 등 목록표기면 제거
+                if (lines.length > 1 && lines[0].replace(/"/g, '').trim().includes('목록')) {
+                    lines = lines.slice(1);
+                }
+                let headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                // 헤더를 모두 소문자로 변환하여 매핑
+                let headerMap = {};
+                headers.forEach((h, idx) => {
+                    // 한글/영문 모두 지원
+                    if (propertyFieldMap[h]) {
+                        headerMap[propertyFieldMap[h]] = idx;
+                    } else if (propertyFieldMap[h.toLowerCase()]) {
+                        headerMap[propertyFieldMap[h.toLowerCase()]] = idx;
+                    }
+                });
+                let hasHeader = Object.keys(headerMap).length > 0;
+                let dataLines = hasHeader ? lines.slice(1) : lines;
+                dataLines = dataLines.filter(line => {
+                    if (!line.trim()) return false;
+                    const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                    // 중간 헤더 무시
+                    if (headers.every(f => values.includes(f))) return false;
+                    if (values.every(v => v === '' || v.startsWith('__EMPTY'))) return false;
+                    return true;
+                });
+                importedProperties = dataLines.map(line => {
+                    const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                    const obj = {};
+                    propertyFields.forEach(field => {
+                        const colIdx = headerMap[field];
+                        obj[field] = colIdx !== undefined ? values[colIdx] || '' : '';
+                    });
+                    // 모든 필드가 빈 값이면 null 반환
+                    const allEmpty = propertyFields.every(f => !obj[f] || obj[f] === '');
+                    return allEmpty ? null : obj;
+                }).filter(Boolean);
+            } else if (selectedPropertyImportFile.name.endsWith('.xlsx')) {
+                const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                let properties = [];
+                if (workbook.SheetNames.includes('매물목록')) {
+                    const propertySheet = workbook.Sheets['매물목록'];
+                    let rawProperties = XLSX.utils.sheet_to_json(propertySheet, { defval: '' });
+                    // 맨 윗줄이 '매물목록' 등 목록표기면 제거
+                    if (rawProperties.length > 0) {
+                        const firstRow = Object.values(rawProperties[0]).join('').replace(/\s/g, '');
+                        if (firstRow.includes('목록')) {
+                            rawProperties = rawProperties.slice(1);
+                        }
+                    }
+                    properties = rawProperties.map(row => {
+                        const obj = {};
+                        Object.keys(row).forEach(col => {
+                            const key = propertyFieldMap[col] || propertyFieldMap[col.toLowerCase()];
+                            if (key) obj[key] = row[col];
+                        });
+                        // 누락 필드 빈값 보완
+                        propertyFields.forEach(f => { if (!(f in obj)) obj[f] = ''; });
+                        return obj;
+                    });
+                }
+                // 모든 필드가 빈 값인 row는 제외
+                importedProperties = properties.filter(obj => {
+                    return propertyFields.some(f => obj[f] && obj[f] !== '');
+                });
+            }
+            // 기존 데이터와 병합 (ID 부여)
+            const existingProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+            let maxId = existingProperties.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0);
+            const importedWithId = (importedProperties || []).map((p, idx) => {
+                if (!p.id || p.id === '') {
+                    p.id = String(maxId + idx + 1);
+                }
+                return p;
+            });
+            const newProperties = [...existingProperties, ...importedWithId];
+            // Firebase에 저장
+            db.ref('properties').set(newProperties, function(error) {
+                if (error) {
+                    addLog('매물목록 Firebase 저장 실패: ' + error.message, 'error');
+                    alert('매물목록 Firebase 저장에 실패했습니다.');
+                } else {
+                    addLog('매물목록 Firebase 저장 완료.', 'success');
+                    alert('매물목록을 성공적으로 가져왔습니다.');
+                }
+            });
+        } catch (error) {
+            addLog(`매물목록 가져오기 실패: ${error.message}`, 'error');
+            alert('매물목록 가져오기에 실패했습니다. 파일을 확인해주세요.');
+        }
+    };
+    if (selectedPropertyImportFile.name.endsWith('.xlsx')) {
+        reader.readAsBinaryString(selectedPropertyImportFile);
+    } else {
+        reader.readAsText(selectedPropertyImportFile);
+    }
+}
+
+// 고객관리 가져오기
+function handleImportCustomerFile(input) {
+    const file = input.files[0];
+    if (file) {
+        selectedCustomerImportFile = file;
+        document.getElementById('importCustomerBtn').disabled = false;
+        addLog(`고객관리 가져오기 파일 선택됨: ${file.name}`, 'info');
+    }
+}
+function importCustomerData() {
+    if (!selectedCustomerImportFile) {
+        alert('가져올 파일을 선택해주세요.');
+        return;
+    }
+    if (!confirm('기존 고객관리 데이터에 새 데이터를 추가합니다. 계속하시겠습니까?')) {
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        let importedCustomers = [];
+        const customerFields = [
+            '최초통화시간', '전화번호', '성별', '고객명(저장명)', '약속시간', '원하는금액', '입주일', '원하는매물', '문자/카톡', '비고'
+        ];
+        try {
+            if (selectedCustomerImportFile.name.endsWith('.csv')) {
+                let lines = e.target.result.split('\n').filter(line => line.trim());
+                // 맨 윗줄이 '고객목록' 등 목록표기면 제거
+                if (lines.length > 1 && lines[0].replace(/"/g, '').trim().includes('목록')) {
+                    lines = lines.slice(1);
+                }
+                let headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                headers = headers.filter(h => customerFields.includes(h));
+                let hasHeader = headers.length > 0;
+                let dataLines = hasHeader ? lines.slice(1) : lines;
+                dataLines = dataLines.filter(line => {
+                    if (!line.trim()) return false;
+                    const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                    if (customerFields.every(f => values.includes(f))) return false;
+                    if (values.every(v => v === '' || v.startsWith('__EMPTY'))) return false;
+                    return true;
+                });
+                importedCustomers = dataLines.map(line => {
+                    const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                    const obj = {};
+                    customerFields.forEach((field, idx) => {
+                        const colIdx = headers.indexOf(field);
+                        obj[field] = colIdx !== -1 ? values[colIdx] || '' : '';
+                    });
+                    // 모든 필드가 빈 값이면 null 반환
+                    const allEmpty = customerFields.every(f => !obj[f] || obj[f] === '');
+                    return allEmpty ? null : obj;
+                }).filter(Boolean);
+            } else if (selectedCustomerImportFile.name.endsWith('.xlsx')) {
+                const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                let customers = [];
+                if (workbook.SheetNames.includes('고객관리')) {
+                    const customerSheet = workbook.Sheets['고객관리'];
+                    let rawCustomers = XLSX.utils.sheet_to_json(customerSheet, { defval: '' });
+                    // 맨 윗줄이 '고객목록' 등 목록표기면 제거
+                    if (rawCustomers.length > 0) {
+                        const firstRow = Object.values(rawCustomers[0]).join('').replace(/\s/g, '');
+                        if (firstRow.includes('목록')) {
+                            rawCustomers = rawCustomers.slice(1);
+                        }
+                    }
+                    customers = rawCustomers.map(row => {
+                        const obj = {};
+                        customerFields.forEach(field => {
+                            let val = row[field] || '';
+                            // 엑셀 날짜/시간 변환: '최초통화시간' 필드만 처리
+                            if (field === '최초통화시간' && val) {
+                                // 엑셀 날짜가 숫자(Serial)로 들어올 경우
+                                if (typeof val === 'number') {
+                                    // Excel serial date to JS Date (KST: UTC+9)
+                                    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                                    // add 9 hours for KST
+                                    const date = new Date(excelEpoch.getTime() + val * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000);
+                                    const y = date.getFullYear();
+                                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                                    const d = String(date.getDate()).padStart(2, '0');
+                                    const hh = String(date.getHours()).padStart(2, '0');
+                                    const mm = String(date.getMinutes()).padStart(2, '0');
+                                    val = `${y}-${m}-${d} ${hh}:${mm}`;
+                                } else if (typeof val === 'string' && val) {
+                                    // ISO, yyyy-mm-dd, yyyy-mm-ddThh:mm 등 다양한 문자열 처리
+                                    let date = new Date(val);
+                                    if (!isNaN(date.getTime())) {
+                                        // KST 변환: 기존 시간에 9시간 더함
+                                        date = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+                                        const y = date.getFullYear();
+                                        const m = String(date.getMonth() + 1).padStart(2, '0');
+                                        const d = String(date.getDate()).padStart(2, '0');
+                                        const hh = String(date.getHours()).padStart(2, '0');
+                                        const mm = String(date.getMinutes()).padStart(2, '0');
+                                        val = `${y}-${m}-${d} ${hh}:${mm}`;
+                                    }
+                                }
+                            }
+                            obj[field] = val;
+                        });
+                        return obj;
+                    });
+                }
+                // 모든 필드가 빈 값인 row는 제외
+                importedCustomers = customers.filter(obj => {
+                    return customerFields.some(f => obj[f] && obj[f] !== '');
+                });
+            }
+            // 기존 데이터와 병합 (ID 부여)
+            const existingCustomers = JSON.parse(localStorage.getItem('customers') || '[]');
+            let maxCustomerId = existingCustomers.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0);
+            const importedWithId = (importedCustomers || []).map((c, idx) => {
+                if (!c.id || c.id === '') {
+                    c.id = String(maxCustomerId + idx + 1);
+                }
+                return c;
+            });
+            const newCustomers = [...existingCustomers, ...importedWithId];
+            // Firebase에 저장
+            db.ref('customers').set(newCustomers, function(error) {
+                if (error) {
+                    addLog('고객관리 Firebase 저장 실패: ' + error.message, 'error');
+                    alert('고객관리 Firebase 저장에 실패했습니다.');
+                } else {
+                    addLog('고객관리 Firebase 저장 완료.', 'success');
+                    alert('고객관리 데이터를 성공적으로 가져왔습니다.');
+                }
+            });
+        } catch (error) {
+            addLog(`고객관리 가져오기 실패: ${error.message}`, 'error');
+            alert('고객관리 가져오기에 실패했습니다. 파일을 확인해주세요.');
+        }
+    };
+    if (selectedCustomerImportFile.name.endsWith('.xlsx')) {
+        reader.readAsBinaryString(selectedCustomerImportFile);
+    } else {
+        reader.readAsText(selectedCustomerImportFile);
+    }
+}
+
+// 드래그 앤 드롭 지원 for 각 import
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        // 매물목록
+        var dropLabel1 = document.getElementById('importPropertyDropLabel');
+        var importInput1 = document.getElementById('importPropertyFile');
+        if (dropLabel1 && importInput1) {
+            dropLabel1.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropLabel1.style.background = '#e5e7eb';
+                dropLabel1.style.borderColor = '#10b981';
+            });
+            dropLabel1.addEventListener('dragleave', function(e) {
+                dropLabel1.style.background = '';
+                dropLabel1.style.borderColor = '';
+            });
+            dropLabel1.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropLabel1.style.background = '';
+                dropLabel1.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    importInput1.files = e.dataTransfer.files;
+                    handleImportPropertyFile(importInput1);
+                }
+            });
+        }
+        // 고객관리
+        var dropLabel2 = document.getElementById('importCustomerDropLabel');
+        var importInput2 = document.getElementById('importCustomerFile');
+        if (dropLabel2 && importInput2) {
+            dropLabel2.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropLabel2.style.background = '#e5e7eb';
+                dropLabel2.style.borderColor = '#10b981';
+            });
+            dropLabel2.addEventListener('dragleave', function(e) {
+                dropLabel2.style.background = '';
+                dropLabel2.style.borderColor = '';
+            });
+            dropLabel2.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropLabel2.style.background = '';
+                dropLabel2.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    importInput2.files = e.dataTransfer.files;
+                    handleImportCustomerFile(importInput2);
+                }
+            });
+        }
+    });
+})();
+
+function handleImportFile(input) {
+    const file = input.files[0];
+    if (file) {
+        selectedImportFile = file;
+        document.getElementById('importBtn').disabled = false;
+        addLog(`가져오기 파일 선택됨: ${file.name}`, 'info');
+    }
+}
+
+function importData() {
+    if (!selectedImportFile) {
+        alert('가져올 파일을 선택해주세요.');
+        return;
+    }
+    if (!confirm('기존 데이터에 새 데이터를 추가합니다. 계속하시겠습니까?')) {
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        let importedData = { properties: [], customers: [] };
+        // 고객관리 필드명 강제 매핑
+        const customerFields = [
+            '최초통화시간', '전화번호', '성별', '고객명(저장명)', '약속시간', '원하는금액', '입주일', '원하는매물', '문자/카톡', '비고'
+        ];
+        // 한글 헤더와 실제 key 매핑
+        const propertyFieldMap = {
+            'ID': 'id',
+            '거래유형': 'transactionType',
+            '매물형태': 'type',
+            '매물명': 'name',
+            '주소': 'address',
+            '가격': 'price',
+            '보증금': 'deposit',
+            '월세': 'monthly',
+            '면적': 'area',
+            '상태': 'status',
+            '상세설명': 'description',
+            '조율여부': 'negotiable',
+            '관리비': 'maintenanceFee',
+            '관리비포함항목': 'maintenanceIncluded',
+            '청소여부': 'cleaning',
+            '공실/퇴실': 'vacancy',
+            '난방': 'heating',
+            '옵션': 'options',
+            '세부형태': 'detailType',
+            '주차': 'parking',
+            '비번': 'password',
+            '사용승인일': 'approvalDate',
+            '연락처': 'contact',
+            '비고': 'note'
+        };
+        const propertyFields = Object.keys(propertyFieldMap);
+        try {
+            if (selectedImportFile.name.endsWith('.csv')) {
+                const lines = e.target.result.split('\n').filter(line => line.trim());
+                let headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+                // 불필요한 컬럼(__EMPTY 등) 제거
+                headers = headers.filter(h => propertyFields.includes(h) || customerFields.includes(h));
+                let hasHeader = headers.length > 0;
+                let dataLines = hasHeader ? lines.slice(1) : lines;
+                // 데이터 라인 필터링: 중간 헤더, 빈 행, __EMPTY 등 무시
+                dataLines = dataLines.filter(line => {
+                    if (!line.trim()) return false;
+                    const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                    // 중간 헤더(필드명과 일치) 무시
+                    if (propertyFields.every(f => values.includes(f)) || customerFields.every(f => values.includes(f))) return false;
+                    // __EMPTY 등 불필요한 값만 있는 행 무시
+                    if (values.every(v => v === '' || v.startsWith('__EMPTY'))) return false;
+                    return true;
+                });
+                // 매물목록 CSV
+                if (propertyFields.some(f => headers.includes(f))) {
+                    importedData.properties = dataLines.map(line => {
+                        const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                        const obj = {};
+                        propertyFields.forEach((field, idx) => {
+                            const colIdx = headers.indexOf(field);
+                            const key = propertyFieldMap[field];
+                            obj[key] = colIdx !== -1 ? values[colIdx] || '' : '';
+                        });
+                        return obj;
+                    });
+                }
+                // 고객관리 CSV
+                if (customerFields.some(f => headers.includes(f))) {
+                    importedData.customers = dataLines.map(line => {
+                        const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+                        const obj = {};
+                        customerFields.forEach((field, idx) => {
+                            const colIdx = headers.indexOf(field);
+                            obj[field] = colIdx !== -1 ? values[colIdx] || '' : '';
+                        });
+                        return obj;
+                    });
+                }
+            }
+            else if (selectedImportFile.name.endsWith('.xlsx')) {
+                const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                let customers = [];
+                let properties = [];
+                if (workbook.SheetNames.includes('고객관리')) {
+                    const customerSheet = workbook.Sheets['고객관리'];
+                    const rawCustomers = XLSX.utils.sheet_to_json(customerSheet, { defval: '' });
+                    customers = rawCustomers.map(row => {
+                        const obj = {};
+                        customerFields.forEach(field => {
+                            obj[field] = row[field] || '';
+                        });
+                        return obj;
+                    });
+                }
+                if (workbook.SheetNames.includes('매물목록')) {
+                    const propertySheet = workbook.Sheets['매물목록'];
+                    const rawProperties = XLSX.utils.sheet_to_json(propertySheet, { defval: '' });
+                    properties = rawProperties.map(row => {
+                        const obj = {};
+                        propertyFields.forEach(field => {
+                            const key = propertyFieldMap[field];
+                            obj[key] = row[field] || '';
+                        });
+                        return obj;
+                    });
+                }
+                importedData.customers = customers;
+                importedData.properties = properties;
+            }
+            // 기존 데이터와 병합 (ID 등 추가 가공 필요시 여기에)
+            const existingProperties = JSON.parse(localStorage.getItem('properties') || '[]');
+            const existingCustomers = JSON.parse(localStorage.getItem('customers') || '[]');
+            // 매물데이터: propertyFields 기반, 고객관리: customerFields 기반
+            // ID 부여: 기존 최대 id + 1부터 순차적으로
+            let maxId = existingProperties.reduce((max, p) => Math.max(max, Number(p.id) || 0), 0);
+            const importedWithId = (importedData.properties || []).map((p, idx) => {
+                // 이미 id가 있으면 유지, 없으면 새로 부여
+                if (!p.id || p.id === '') {
+                    p.id = String(maxId + idx + 1);
+                }
+                return p;
+            });
+            const newProperties = [...existingProperties, ...importedWithId];
+            // 고객에 id/status 부여 및 dropdown 값 매핑
+            let maxCustomerId = existingCustomers.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0);
+            const allowedStatus = ['potential', 'interested', 'contracted'];
+            const allowedPropertyTypes = ['land', 'store', 'apartment', 'officetel', 'room', 'factory'];
+            const importedCustomersWithId = (importedData.customers || []).map((c, idx) => {
+                // id
+                if (!c.id || c.id === '') {
+                    c.id = String(maxCustomerId + idx + 1);
+                }
+                // status: 한글/영문 매핑
+                let status = c.status || c['상태'] || '';
+                if (status === '잠재고객') status = 'potential';
+                else if (status === '관심고객') status = 'interested';
+                else if (status === '계약고객') status = 'contracted';
+                if (!allowedStatus.includes(status)) status = 'potential';
+                c.status = status;
+                // propertyType: 한글/영문 매핑
+                let type = c.propertyType || c['원하는매물'] || '';
+                if (type === '토지') type = 'land';
+                else if (type === '상가') type = 'store';
+                else if (type === '아파트') type = 'apartment';
+                else if (type === '오피스텔') type = 'officetel';
+                else if (type === '원투쓰리룸') type = 'room';
+                else if (type === '공장/사무실') type = 'factory';
+                if (!allowedPropertyTypes.includes(type)) type = '';
+                c.propertyType = type;
+                return c;
+            });
+            const newCustomers = [...existingCustomers, ...importedCustomersWithId];
+            localStorage.setItem('properties', JSON.stringify(newProperties));
+            localStorage.setItem('customers', JSON.stringify(newCustomers));
+            localStorage.setItem('lastDataUpdate', new Date().toISOString());
+            addLog('매물/고객 데이터가 가져오기 완료되었습니다. (매물/고객에 ID, 드롭다운 값 자동 부여)', 'success');
+            alert('매물/고객 데이터를 성공적으로 가져왔습니다.');
+        } catch (error) {
+            addLog(`가져오기 실패: ${error.message}`, 'error');
+            alert('가져오기에 실패했습니다. 파일을 확인해주세요.');
+        }
+    };
+    if (selectedImportFile.name.endsWith('.xlsx')) {
+        reader.readAsBinaryString(selectedImportFile);
+    } else {
+        reader.readAsText(selectedImportFile);
+    }
+}
+
+// 드래그 앤 드롭 지원 for import
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var dropLabel = document.getElementById('importDropLabel');
+        var importInput = document.getElementById('importFile');
+        if (dropLabel && importInput) {
+            dropLabel.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                dropLabel.style.background = '#e5e7eb';
+                dropLabel.style.borderColor = '#10b981';
+            });
+            dropLabel.addEventListener('dragleave', function(e) {
+                dropLabel.style.background = '';
+                dropLabel.style.borderColor = '';
+            });
+            dropLabel.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropLabel.style.background = '';
+                dropLabel.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    importInput.files = e.dataTransfer.files;
+                    handleImportFile(importInput);
+                }
+            });
+        }
+    });
+})();
+    </script>
+</body>
+</html>

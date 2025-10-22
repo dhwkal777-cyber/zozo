@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고객관리 - 부동산 관리 시스템</title>
+    
+        <!-- Google Sheets API 연동 (Node.js 서버 fetch) -->
+        <script>
+        // 전역 변수
+        window.customers = [];
+        window.editingCustomerId = null;
+
+        // 고객 불러오기 (Google Sheets API)
+        window.loadCustomersFromSheets = async function() {
+            try {
+                const res = await fetch('https://spreadsheet-test-393881805086.asia-northeast3.run.app/customers');
+                if (!res.ok) throw new Error('서버 오류');
+                const data = await res.json();
+                window.customers = Array.isArray(data) ? data : [];
+                if (window.renderCustomers) window.renderCustomers();
+            } catch (error) {
+                console.error('고객 불러오기 실패:', error);
+                window.customers = [];
+                if (window.renderCustomers) window.renderCustomers();
+                alert('고객 불러오기에 실패했습니다. 서버 상태를 확인하세요.');
+            }
+        };
+
+        // 고객 저장 (Google Sheets API)
+        window.saveCustomersToSheets = async function(customers) {
+            try {
+                const res = await fetch('https://spreadsheet-test-393881805086.asia-northeast3.run.app/customers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(customers)
+                });
+                if (!res.ok) throw new Error('서버 오류');
+                alert('고객 정보가 성공적으로 저장되었습니다.');
+            } catch (error) {
+                console.error('고객 저장 실패:', error);
+                alert('고객 저장에 실패했습니다. 서버 상태를 확인하세요.');
+            }
+        };
+
+        // DOMContentLoaded 시 불러오기
+        document.addEventListener('DOMContentLoaded', function() {
+            window.loadCustomersFromSheets();
+            document.getElementById('searchInput').addEventListener('input', filterCustomers);
+        });
+        </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #92400e 100%);
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 헤더 */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: #374151;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .page-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .add-btn {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .add-btn:hover {
+            background: #d97706;
+        }
+
+        /* 메인 컨텐츠 */
+        .main-content {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 검색 및 필터 */
+        .search-filter {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        /* 고객 목록 */
+        .customers-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .customer-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .customer-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+        }
+
+        .customer-card.contracted {
+            filter: grayscale(0.7) opacity(0.7);
+            text-decoration: line-through;
+            position: relative;
+        }
+
+        .customer-card.contracted * {
+            text-decoration: line-through !important;
+            color: #aaa !important;
+        }
+
+        .customer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .customer-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .customer-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-potential { background: #dbeafe; color: #1d4ed8; }
+        .status-interested { background: #fef3c7; color: #d97706; }
+        .status-contracted { background: #d1fae5; color: #059669; }
+
+        .customer-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .info-item i {
+            width: 16px;
+            text-align: center;
+            color: #f59e0b;
+        }
+
+        .customer-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .edit-btn:hover {
+            background: #2563eb;
+        }
+
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background: #dc2626;
+        }
+
+        .view-btn {
+            background: #34d399;
+            color: white;
+        }
+
+        .view-btn:hover {
+            background: #10b981;
+        }
+
+        .contract-btn {
+            background: #6366f1;
+            color: #fff;
+        }
+
+        .contract-btn:hover {
+            background: #4338ca;
+        }
+
+        /* 모달 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #d97706;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        /* 페이지네이션 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .pagination-btn:hover {
+            border-color: #f59e0b;
+            background: #fef3c7;
+        }
+
+        .pagination-btn.active {
+            background: #f59e0b;
+            color: white;
+            border-color: #f59e0b;
+        }
+
+        .pagination-info {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 15px;
+            }
+
+            .main-content {
+                padding: 15px;
+            }
+
+            .customer-info {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 20px;
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <div class="header">
+        <div class="header-content">
+            <a href="main.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="page-title">고객관리</h1>
+            <button class="add-btn" onclick="openModal()">
+                <i class="fas fa-plus"></i> 고객추가
+            </button>
+        </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content">
+        <!-- 검색 및 필터 -->
+        <div class="search-filter">
+            <input type="text" id="searchInput" class="search-box" placeholder="고객명, 연락처, 관심지역으로 검색...">
+        </div>
+
+        <!-- 고객 목록 -->
+        <div id="customersContainer" class="customers-grid">
+            <!-- 고객 카드들이 여기에 동적으로 추가됩니다 -->
+        </div>
+
+
+
+        <!-- 페이지네이션 -->
+        <div id="paginationContainer" class="pagination-container">
+            <!-- 페이지네이션이 여기에 동적으로 추가됩니다 -->
+        </div>
+    </div>
+
+    <!-- 고객 추가/수정 모달 -->
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">고객 추가</h2>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="customerForm">
+                <div class="form-group">
+                    <label class="form-label">최초통화시간</label>
+                    <input type="text" class="form-input" id="firstContactTime" name="firstContactTime" placeholder="YYYY-MM-DD HH:MM">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">전화번호</label>
+                    <input type="text" class="form-input" id="phoneNumber" name="phoneNumber" placeholder="전화번호 입력">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">성별</label>
+                    <input type="text" class="form-input" id="gender" name="gender" placeholder="남/여">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">고객명(저장명)</label>
+                    <input type="text" class="form-input" id="customerName" name="customerName" placeholder="고객명 입력">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">약속시간</label>
+                    <input type="text" class="form-input" id="appointmentTime" name="appointmentTime" placeholder="YYYY-MM-DD HH:MM">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">원하는금액</label>
+                    <input type="text" class="form-input" id="desiredAmount" name="desiredAmount" placeholder="금액 입력">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">입주일</label>
+                    <input type="text" class="form-input" id="moveInDate" name="moveInDate" placeholder="YYYY-MM-DD">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">원하는매물</label>
+                    <input type="text" class="form-input" id="desiredProperty" name="desiredProperty" placeholder="원하는 매물 입력">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">문자/카톡</label>
+                    <input type="text" class="form-input" id="messageOrKakao" name="messageOrKakao" placeholder="문자/카톡 여부">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">비고</label>
+                    <input type="text" class="form-input" id="note" name="note" placeholder="비고 입력">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">취소</button>
+                    <button type="submit" class="btn btn-primary">저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 고객 상세보기 모달 -->
+    <div id="customerDetailModal" class="modal">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h2 class="modal-title">고객 상세정보</h2>
+                <button class="close-btn" onclick="closeCustomerDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="customerDetailBody"></div>
+        </div>
+    </div>
+
+    <script>
+
+        let customers = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let editingCustomerId = null;
+
+    // Google Sheets 저장 함수
+    function saveToStorage() {
+        window.saveCustomersToSheets(customers);
+    }
+
+    // 샘플 데이터 추가 (Firebase에 저장)
+    function addSampleData() {
+        const sampleCustomers = [
+            {
+                id: 1,
+                name: '김영희',
+                phone: '010-1234-5678',
+                email: 'kim@email.com',
+                status: 'interested',
+                interestedArea: '강남구, 서초구',
+                budget: 50000,
+                propertyType: 'apartment',
+                notes: '3룸 이상 희망, 학군 중시',
+                createdAt: '2024-10-01T00:00:00Z',
+                updatedAt: '2024-10-01T00:00:00Z'
+            },
+            {
+                id: 2,
+                name: '박민수',
+                phone: '010-2345-6789',
+                email: 'park@email.com',
+                status: 'potential',
+                interestedArea: '홍대, 신촌',
+                budget: 20000,
+                propertyType: 'store',
+                notes: '카페 창업 계획',
+                createdAt: '2024-10-02T00:00:00Z',
+                updatedAt: '2024-10-02T00:00:00Z'
+            },
+            {
+                id: 3,
+                name: '이정우',
+                phone: '010-3456-7890',
+                email: 'lee@email.com',
+                status: 'contracted',
+                interestedArea: '잠실, 송파구',
+                budget: 80000,
+                propertyType: 'apartment',
+                notes: '계약 완료 - 잠실 래미안',
+                createdAt: '2024-10-03T00:00:00Z',
+                updatedAt: '2024-10-03T00:00:00Z'
+            }
+        ];
+        customers = sampleCustomers;
+        saveCustomersToFirebase(customers);
+    }
+
+        // 고객 목록 렌더링
+        function renderCustomers() {
+            const container = document.getElementById('customersContainer');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let filteredCustomers = customers;
+            if (searchTerm) {
+                filteredCustomers = customers.filter(customer => 
+                    customer.name.toLowerCase().includes(searchTerm) ||
+                    customer.phone.includes(searchTerm) ||
+                    (customer.interestedArea && customer.interestedArea.toLowerCase().includes(searchTerm))
+                );
+            }
+            // 페이지네이션 적용
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
+            if (paginatedCustomers.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6b7280;">
+                        <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>등록된 고객이 없습니다.</p>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = paginatedCustomers.map(customer => {
+                    const isContracted = customer.status === 'contracted';
+                    return `
+                    <div class="customer-card${isContracted ? ' contracted' : ''}" data-id="${customer.id}">
+                        <div class="customer-header">
+                            <h3 class="customer-name">${customer['고객명(저장명)'] || customer.name || ''}</h3>
+                            <span class="customer-status status-${customer.status ? customer.status : 'potential'}">
+                                ${customer.status ? getStatusText(customer.status) : ''}
+                            </span>
+                        </div>
+                        <div class="customer-info">
+                            <div class="info-item">
+                                <i class="fas fa-phone"></i>
+                                <span>${customer['전화번호'] || customer.phone || ''}</span>
+                            </div>
+                            ${(customer['email'] || customer.email) ? `
+                                <div class="info-item">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>${customer['email'] || customer.email}</span>
+                                </div>
+                            ` : ''}
+                            ${(customer['관심지역'] || customer.interestedArea) ? `
+                                <div class="info-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>${customer['관심지역'] || customer.interestedArea}</span>
+                                </div>
+                            ` : ''}
+                            ${(customer['원하는금액'] || customer.budget) ? `
+                                <div class="info-item">
+                                    <i class="fas fa-won"></i>
+                                    <span>${(customer['원하는금액'] || customer.budget).toLocaleString()}만원</span>
+                                </div>
+                            ` : ''}
+                            ${(customer['원하는매물'] || customer.propertyType) ? `
+                                <div class="info-item">
+                                    <i class="fas fa-home"></i>
+                                    <span>${customer['원하는매물'] || getPropertyTypeText(customer.propertyType)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${(customer['비고'] || customer.notes) ? `
+                            <div style="margin-bottom: 15px; padding: 10px; background: #f9fafb; border-radius: 8px; font-size: 0.9rem; color: #6b7280;">
+                                ${customer['비고'] || customer.notes}
+                            </div>
+                        ` : ''}
+                        <div class="customer-actions">
+                            <button class="action-btn contract-btn" data-action="contract">
+                                <i class="fas fa-check-double"></i> ${isContracted ? '완료취소' : '계약완료'}
+                            </button>
+                            <button class="action-btn view-btn" data-action="view"><i class="fas fa-eye"></i> 보기</button>
+                            <button class="action-btn edit-btn" data-action="edit"><i class="fas fa-edit"></i> 수정</button>
+                            <button class="action-btn delete-btn" data-action="delete"><i class="fas fa-trash"></i> 삭제</button>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+                // 이벤트 위임 방식으로 버튼 동작 연결
+                container.querySelectorAll('.customer-actions').forEach(actions => {
+                    actions.addEventListener('click', function(e) {
+                        const btn = e.target.closest('button[data-action]');
+                        if (!btn) return;
+                        const card = btn.closest('.customer-card');
+                        if (!card) return;
+                        const id = Number(card.getAttribute('data-id'));
+                        switch (btn.getAttribute('data-action')) {
+                            case 'contract': markContracted(id); break;
+                            case 'view': viewCustomer(id); break;
+                            case 'edit': editCustomer(id); break;
+                            case 'delete': deleteCustomer(id); break;
+                        }
+                        e.stopPropagation();
+                    });
+                });
+            }
+            renderPagination(filteredCustomers.length);
+        }
+
+        // 페이지네이션 렌더링
+        function renderPagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const container = document.getElementById('paginationContainer');
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // 이전 버튼
+            if (currentPage > 1) {
+                paginationHTML += `<button class="pagination-btn" onclick="changePage(${currentPage - 1})">
+                    <i class="fas fa-chevron-left"></i>
+                </button>`;
+            }
+
+            // 페이지 번호
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="pagination-btn active">${i}</button>`;
+                } else {
+                    paginationHTML += `<button class="pagination-btn" onclick="changePage(${i})">${i}</button>`;
+                }
+            }
+
+            // 다음 버튼
+            if (currentPage < totalPages) {
+                paginationHTML += `<button class="pagination-btn" onclick="changePage(${currentPage + 1})">
+                    <i class="fas fa-chevron-right"></i>
+                </button>`;
+            }
+
+            // 페이지 정보
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            paginationHTML += `<span class="pagination-info">${totalItems}개 중 ${startItem}-${endItem}개 표시</span>`;
+
+            container.innerHTML = paginationHTML;
+        }
+
+        // 페이지 변경
+        function changePage(page) {
+            currentPage = page;
+            renderCustomers();
+            
+            // 페이지 상단으로 스크롤
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 검색 및 필터
+        function filterCustomers() {
+            currentPage = 1; // 검색 시 첫 페이지로 이동
+            renderCustomers();
+        }
+
+        // 상태 텍스트 반환
+        function getStatusText(status) {
+            const statusMap = {
+                'potential': '잠재고객',
+                'interested': '관심고객',
+                'contracted': '계약고객'
+            };
+            return statusMap[status] || status;
+        }
+
+        // 매물유형 텍스트 반환
+        function getPropertyTypeText(type) {
+            const typeMap = {
+                'land': '토지',
+                'store': '상가',
+                'apartment': '아파트',
+                'officetel': '오피스텔',
+                'room': '원투쓰리룸',
+                'factory': '공장/사무실'
+            };
+            return typeMap[type] || type;
+        }
+
+        // 모달 열기
+        function openModal() {
+            editingCustomerId = null;
+            document.getElementById('modalTitle').textContent = '고객 추가';
+            document.getElementById('customerForm').reset();
+            document.getElementById('customerModal').classList.add('active');
+        }
+
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('customerModal').classList.remove('active');
+            editingCustomerId = null;
+        }
+
+        // 고객 수정
+        function editCustomer(id) {
+            const customer = customers.find(c => Number(c.id) === Number(id));
+            if (!customer) return;
+
+            editingCustomerId = Number(id);
+            document.getElementById('modalTitle').textContent = '고객 수정';
+            // 폼에 기존 데이터 입력 (필드명 일치)
+            document.getElementById('firstContactTime').value = customer['최초통화시간'] || '';
+            document.getElementById('phoneNumber').value = customer['전화번호'] || '';
+            document.getElementById('gender').value = customer['성별'] || '';
+            document.getElementById('customerName').value = customer['고객명(저장명)'] || '';
+            document.getElementById('appointmentTime').value = customer['약속시간'] || '';
+            document.getElementById('desiredAmount').value = customer['원하는금액'] || '';
+            document.getElementById('moveInDate').value = customer['입주일'] || '';
+            document.getElementById('desiredProperty').value = customer['원하는매물'] || '';
+            document.getElementById('messageOrKakao').value = customer['문자/카톡'] || '';
+            document.getElementById('note').value = customer['비고'] || '';
+            document.getElementById('customerModal').classList.add('active');
+        }
+
+        // 고객 삭제
+        function deleteCustomer(id) {
+            if (confirm('정말로 이 고객을 삭제하시겠습니까?')) {
+                customers = customers.filter(c => Number(c.id) !== Number(id));
+                saveCustomersToFirebase(customers);
+                renderCustomers();
+            }
+        }
+
+        // 고객 상세보기
+        function viewCustomer(id) {
+            const customer = customers.find(c => Number(c.id) === Number(id));
+            if (!customer) return;
+            let html = '<table style="width:100%;border-collapse:collapse;">';
+            for (const [key, value] of Object.entries(customer)) {
+                if (key === 'id') continue;
+                let displayValue = value;
+                if (key === '최초통화시간' && value) {
+                    // 날짜/시간 포맷 변환 시도 (YYYY-MM-DD HH:mm 또는 ISO 등)
+                    const date = new Date(value);
+                    if (!isNaN(date.getTime())) {
+                        // YYYY-MM-DD 형식으로만 출력 (시간 제거)
+                        const y = date.getFullYear();
+                        const m = String(date.getMonth() + 1).padStart(2, '0');
+                        const d = String(date.getDate()).padStart(2, '0');
+                        displayValue = `${y}-${m}-${d}`;
+                    }
+                }
+                html += `<tr><th style="text-align:left;padding:8px;background:#f3f4f6;width:120px;">${key}</th><td style="padding:8px;">${displayValue || ''}</td></tr>`;
+            }
+            html += '</table>';
+            document.getElementById('customerDetailBody').innerHTML = html;
+            document.getElementById('customerDetailModal').classList.add('active');
+        }
+
+        // 고객 상세보기 모달 닫기
+        function closeCustomerDetailModal() {
+            document.getElementById('customerDetailModal').classList.remove('active');
+        }
+
+        // 계약완료 버튼 동작
+        function markContracted(id) {
+            const idx = customers.findIndex(c => Number(c.id) === Number(id));
+            if (idx !== -1) {
+                if (customers[idx].status === 'contracted') {
+                    customers[idx].status = 'potential';
+                } else {
+                    customers[idx].status = 'contracted';
+                }
+                saveCustomersToFirebase(customers);
+                renderCustomers();
+            }
+        }
+
+        // 폼 제출 처리
+        document.getElementById('customerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // customerFields에 맞게 저장
+            const customerFields = [
+                '최초통화시간', '전화번호', '성별', '고객명(저장명)', '약속시간', '원하는금액', '입주일', '원하는매물', '문자/카톡', '비고'
+            ];
+            const fieldMap = {
+                '최초통화시간': document.getElementById('firstContactTime').value.trim(),
+                '전화번호': document.getElementById('phoneNumber').value.trim(),
+                '성별': document.getElementById('gender').value.trim(),
+                '고객명(저장명)': document.getElementById('customerName').value.trim(),
+                '약속시간': document.getElementById('appointmentTime').value.trim(),
+                '원하는금액': document.getElementById('desiredAmount').value.trim(),
+                '입주일': document.getElementById('moveInDate').value.trim(),
+                '원하는매물': document.getElementById('desiredProperty').value.trim(),
+                '문자/카톡': document.getElementById('messageOrKakao').value.trim(),
+                '비고': document.getElementById('note').value.trim()
+            };
+            // window.editingCustomerId가 undefined일 경우 null로 처리
+            const editId = typeof window.editingCustomerId === 'undefined' ? null : window.editingCustomerId;
+            if (editId !== null) {
+                // 수정
+                const index = window.customers.findIndex(c => c.id === editId);
+                if (index !== -1) {
+                    window.customers[index] = { ...window.customers[index], ...fieldMap };
+                }
+            } else {
+                // 추가: 고유 id 부여
+                let newId = 1;
+                if (window.customers.length > 0) {
+                    // 가장 큰 id + 1
+                    const maxId = Math.max(...window.customers.map(c => c.id || 0));
+                    newId = maxId + 1;
+                }
+                window.customers.unshift({ id: newId, status: 'potential', ...fieldMap });
+            }
+            window.saveCustomersToFirebase(window.customers).then(() => {
+                window.renderCustomers();
+                closeModal();
+            });
+        });
+
+        // 상세보기 모달 외부 클릭 시 닫기
+        document.getElementById('customerDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCustomerDetailModal();
+        });
+
+        // 스타일 추가
+        const style = document.createElement('style');
+        style.innerHTML = `
+        .customer-card.contracted {
+            filter: grayscale(0.7) opacity(0.7);
+            text-decoration: line-through;
+            position: relative;
+        }
+        .customer-card.contracted * {
+            text-decoration: line-through !important;
+            color: #aaa !important;
+        }
+        `;
+        document.head.appendChild(style);
+
+        // 기존 함수들도 window.*로 연결
+    window.renderCustomers = renderCustomers;
+    window.filterCustomers = filterCustomers;
+    // window.editingCustomerId 연결
+    window.editingCustomerId = editingCustomerId;
+    </script>
+</body>
+</html>
